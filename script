@@ -3,7 +3,7 @@ let mainInterval;
  
 const dataTestComponentClassName = 'e4VJZ';
  
-const TIME_OUT = 1000;
+const TIME_OUT = 3000;
  
 // Challenge types
 const CHARACTER_SELECT_TYPE = 'characterSelect';
@@ -24,6 +24,9 @@ const SELECT_TRANSCRIPTION_TYPE = 'selectTranscription';
 const SPEAK_TYPE = 'speak';
 const SELECT_PRONUNCIATION_TYPE = 'selectPronunciation';
 const PARTIALREVERSE_TRANSLATE = 'partialReverseTranslate';
+const LISTEN_ISOLATION = 'listenIsolation';
+const LISTEN_COMPLETE = 'listenComplete';
+const LISTEN_MATCH = 'listenMatch';
  
 // Query DOM keys
 const CHALLENGE_CHOICE_CARD = '[data-test="challenge-choice-card"]';
@@ -37,6 +40,10 @@ const PLAYER_NEXT = '[data-test="player-next"]';
 const PLAYER_SKIP = '[data-test="player-skip"]';
 const BLAME_INCORRECT = '[data-test="blame blame-incorrect"]';
 const CHARACTER_MATCH = '[data-test="challenge challenge-characterMatch"]';
+const PARTIALREVERSE_TRANSLATE_DOM= '[contenteditable="true"]';
+const CHALLENGE_TRANSLATE_TAP_TOKEN = '[data-test="challenge-tap-token-text"]';
+const LISTEN_MATCH_DOM = '[translate="no"]';
+
  
 const clickEvent = new MouseEvent('click', {
     view: window,
@@ -114,6 +121,7 @@ function classify() {
         case SELECT_PRONUNCIATION_TYPE:
         case READ_COMPREHENSION_TYPE:
         case LISTEN_COMPREHENSION_TYPE:
+		case LISTEN_ISOLATION:
         case FORM_TYPE: { // trắc nghiệm 1 đáp án
             const { choices, correctIndex } = challenge;
             if (DEBUG) console.log('READ_COMPREHENSION LISTEN_COMPREHENSION FORM', { choices, correctIndex });
@@ -129,9 +137,31 @@ function classify() {
             return { choices, correctIndex };
         }
  
-        case CHARACTER_MATCH_TYPE: { // tập hợp các cặp thẻ
-            const { pairs } = challenge;
-            const tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
+		case LISTEN_MATCH: // cap tu`
+		{ 
+			const { pairs } = challenge;
+            let tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
+			if(tokens.length == 0)
+				tokens = document.querySelectorAll(LISTEN_MATCH_DOM);
+           
+                for(let i = 0; i < tokens.length; i++) {
+					let classDataTest = tokens[i].getAttribute('data-test')
+					for(let j = 0; j < tokens.length; j++) {
+						if(classDataTest == tokens[j].getAttribute('data-test')){
+							tokens[i].dispatchEvent(clickEvent);
+							tokens[j].dispatchEvent(clickEvent);
+						}
+					}
+				}
+            
+            return { pairs };
+        }
+		
+        case CHARACTER_MATCH_TYPE: { // tập hợp các cặp the
+			const { pairs } = challenge;
+            let tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
+			if(tokens.length == 0)
+				tokens = document.querySelectorAll(LISTEN_MATCH_DOM);
             pairs.forEach((pair) => {
                 for(let i = 0; i < tokens.length; i++) {
                     if(tokens[i].innerText === pair.transliteration || tokens[i].innerText === pair.character) {
@@ -140,13 +170,19 @@ function classify() {
                 }
             })
             return { pairs };
+			
+				
         }
 		
         case TRANSLATE_TYPE: {
             const { correctTokens, correctSolutions } = challenge;
             if (DEBUG) console.log('TRANSLATE', { correctTokens });
             if (correctTokens) {
-                const tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
+                let tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
+				if(tokens.length == 0)
+				tokens = document.querySelectorAll(CHALLENGE_TRANSLATE_TAP_TOKEN);
+				
+					
                 let ignoreTokeIndexes = [];
                 for (let correctTokenIndex in correctTokens) {
                     for (let tokenIndex in tokens) {
@@ -165,6 +201,7 @@ function classify() {
                 dynamicInput(textInputElement, correctSolutions[0]);
             }
  
+			document.querySelectorAll(PLAYER_NEXT)[0].dispatchEvent(clickEvent);
             return { correctTokens };
         }
  
@@ -178,6 +215,23 @@ function classify() {
         }
  
 		case PARTIALREVERSE_TRANSLATE:
+		{ // điền vào từ còn thiếu
+            const { displayTokens } = challenge;
+            if (DEBUG) console.log('COMPLETE_REVERSE_TRANLATION', { displayTokens });
+			const allToken = displayTokens.filter(token => token.isBlank);
+            //const { text } = displayTokens.filter(token => token.isBlank)[0];
+			let text = '';
+			for(token in allToken){
+				text += allToken[token].text;
+			}
+            let textInputElement = document.querySelectorAll(PARTIALREVERSE_TRANSLATE_DOM)[0];
+
+			textInputElement.textContent = text;
+            dynamicInput(textInputElement,text);
+            return { displayTokens };
+        }
+		
+		case LISTEN_COMPLETE:
         case COMPLETE_REVERSE_TRANSLATION_TYPE: { // điền vào từ còn thiếu
             const { displayTokens } = challenge;
             if (DEBUG) console.log('COMPLETE_REVERSE_TRANLATION', { displayTokens });
@@ -252,14 +306,15 @@ function breakWhenIncorrect() {
 }
  
 function main() {
+	console.log('TESST PHAT');
     try {
         let isPlayerNext = document.querySelectorAll(PLAYER_NEXT)[0].textContent.toUpperCase();
         if (isPlayerNext.valueOf() !== 'CONTINUE') {
             classify();
-            breakWhenIncorrect()
+            //breakWhenIncorrect()
             pressEnter();
         }
-        setTimeout(pressEnter, 150);
+        //setTimeout(pressEnter, 150);
     } catch (e) {
         console.log(e);
     }
@@ -270,6 +325,6 @@ function solveChallenge() {
     console.log(`to stop run this command clearInterval(${mainInterval})`);
 }
  
-// solveChallenge();
+//solveChallenge();
 (solveChallenge)();
 1
