@@ -3,7 +3,7 @@ let mainInterval;
  
 const dataTestElementClass = 'e4VJZ';
  
-const TIME_OUT = 3000;
+const TIME_OUT = 2000;
  
 // Challenge types
 const CHARACTER_SELECT_TYPE = 'characterSelect';
@@ -325,10 +325,12 @@ function main() {
             pressEnter();
 			pressContinueLegend();
         }
-        //setTimeout(pressEnter, 150);
+        
     } catch (e) {
         console.log(e);
     }
+	document.querySelectorAll(PLAYER_NEXT)[0].dispatchEvent(clickEvent);
+	setTimeout(pressEnter, 1000);
 }
  
 function solveChallenge() {
