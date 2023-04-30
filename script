@@ -1,13 +1,13 @@
-const DEBUG = true;
+
 let mainInterval;
  
-const dataTestComponentClassName = 'e4VJZ';
+const dataTestElementClass = 'e4VJZ';
  
 const TIME_OUT = 3000;
  
 // Challenge types
 const CHARACTER_SELECT_TYPE = 'characterSelect';
-const CHARACTER_MATCH_TYPE = 'characterMatch'; // not yet
+const CHARACTER_MATCH_TYPE = 'characterMatch';
 const TRANSLATE_TYPE = 'translate';
 const LISTEN_TAP_TYPE = 'listenTap';
 const NAME_TYPE = 'name';
@@ -27,6 +27,8 @@ const PARTIALREVERSE_TRANSLATE = 'partialReverseTranslate';
 const LISTEN_ISOLATION = 'listenIsolation';
 const LISTEN_COMPLETE = 'listenComplete';
 const LISTEN_MATCH = 'listenMatch';
+const ASSIST_LISTEN_TAP = 'assist';
+const MATCH_TAP = 'match';
  
 // Query DOM keys
 const CHALLENGE_CHOICE_CARD = '[data-test="challenge-choice-card"]';
@@ -80,8 +82,8 @@ function getChallengeObj(theObject) {
 }
  
 function getChallenge() {
-    // const dataTestComponentClassName = 'e4VJZ';
-    const dataTestDOM = document.getElementsByClassName(dataTestComponentClassName)[0];
+    // const dataTestElementClass = 'e4VJZ FQpeZ';
+    const dataTestDOM = document.getElementsByClassName(dataTestElementClass)[0];
  
     if (!dataTestDOM) {
         document.querySelectorAll(PLAYER_NEXT)[0].dispatchEvent(clickEvent);
@@ -96,6 +98,12 @@ function getChallenge() {
  
 function pressEnter() {
     document.dispatchEvent(new KeyboardEvent('keydown', { 'keyCode': 13, 'which': 13 }));
+}
+
+function pressContinueLegend() {
+	let elementContinue = document.querySelectorAll('[aria-current="page"]');
+	
+	elementContinue[0].dispatchEvent(clickEvent);
 }
  
 function dynamicInput(element, msg) {
@@ -116,15 +124,16 @@ function dynamicInput(element, msg) {
 function classify() {
     const challenge = getChallenge();
     if (!challenge) return;
-    if (DEBUG) console.log(`${challenge.type}`, challenge);
+     console.log(`${challenge.type}`, challenge);
     switch (challenge.type) {
         case SELECT_PRONUNCIATION_TYPE:
         case READ_COMPREHENSION_TYPE:
         case LISTEN_COMPREHENSION_TYPE:
 		case LISTEN_ISOLATION:
+		case ASSIST_LISTEN_TAP:
         case FORM_TYPE: { // trắc nghiệm 1 đáp án
             const { choices, correctIndex } = challenge;
-            if (DEBUG) console.log('READ_COMPREHENSION LISTEN_COMPREHENSION FORM', { choices, correctIndex });
+             console.log('READ_COMPREHENSION LISTEN_COMPREHENSION FORM', { choices, correctIndex });
             document.querySelectorAll(CHALLENGE_CHOICE)[correctIndex].dispatchEvent(clickEvent);
             return { choices, correctIndex };
         }
@@ -132,11 +141,12 @@ function classify() {
         case SELECT_TYPE:
         case CHARACTER_SELECT_TYPE: { // trắc nghiệm 1 đáp án
             const { choices, correctIndex } = challenge;
-            if (DEBUG) console.log('SELECT CHARACTER_SELECT', { choices, correctIndex });
+             console.log('SELECT CHARACTER_SELECT', { choices, correctIndex });
             document.querySelectorAll(CHALLENGE_CHOICE_CARD)[correctIndex].dispatchEvent(clickEvent);
             return { choices, correctIndex };
         }
  
+		
 		case LISTEN_MATCH: // cap tu`
 		{ 
 			const { pairs } = challenge;
@@ -157,14 +167,15 @@ function classify() {
             return { pairs };
         }
 		
+		case MATCH_TAP:
         case CHARACTER_MATCH_TYPE: { // tập hợp các cặp the
 			const { pairs } = challenge;
             let tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
 			if(tokens.length == 0)
-				tokens = document.querySelectorAll(LISTEN_MATCH_DOM);
+				tokens = document.querySelectorAll(CHALLENGE_TRANSLATE_TAP_TOKEN);
             pairs.forEach((pair) => {
                 for(let i = 0; i < tokens.length; i++) {
-                    if(tokens[i].innerText === pair.transliteration || tokens[i].innerText === pair.character) {
+                    if(tokens[i].innerText === pair.learningToken || tokens[i].innerText === pair.fromToken) {
                         tokens[i].dispatchEvent(clickEvent);
                     }
                 }
@@ -176,7 +187,7 @@ function classify() {
 		
         case TRANSLATE_TYPE: {
             const { correctTokens, correctSolutions } = challenge;
-            if (DEBUG) console.log('TRANSLATE', { correctTokens });
+             console.log('TRANSLATE', { correctTokens });
             if (correctTokens) {
                 let tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
 				if(tokens.length == 0)
@@ -191,7 +202,7 @@ function classify() {
                         if (token.innerText === correctTokens[correctTokenIndex]) {
                             token.dispatchEvent(clickEvent);
                             ignoreTokeIndexes.push(tokenIndex);
-                            if(DEBUG) console.log(`correctTokenIndex [${correctTokens[correctTokenIndex]}] - tokenIndex [${token.innerText}]`);
+                             console.log(`correctTokenIndex [${correctTokens[correctTokenIndex]}] - tokenIndex [${token.innerText}]`);
                             break;
                         };
                     }
@@ -207,7 +218,7 @@ function classify() {
  
         case NAME_TYPE: { // nhập đán án
             const { correctSolutions } = challenge;
-            if (DEBUG) console.log('NAME', { correctSolutions });
+             console.log('NAME', { correctSolutions });
             let textInputElement = document.querySelectorAll(CHALLENGE_TEXT_INPUT)[0];
             let correctSolution = correctSolutions[0];
             dynamicInput(textInputElement, correctSolution);
@@ -217,7 +228,7 @@ function classify() {
 		case PARTIALREVERSE_TRANSLATE:
 		{ // điền vào từ còn thiếu
             const { displayTokens } = challenge;
-            if (DEBUG) console.log('COMPLETE_REVERSE_TRANLATION', { displayTokens });
+             console.log('COMPLETE_REVERSE_TRANLATION', { displayTokens });
 			const allToken = displayTokens.filter(token => token.isBlank);
             //const { text } = displayTokens.filter(token => token.isBlank)[0];
 			let text = '';
@@ -234,7 +245,7 @@ function classify() {
 		case LISTEN_COMPLETE:
         case COMPLETE_REVERSE_TRANSLATION_TYPE: { // điền vào từ còn thiếu
             const { displayTokens } = challenge;
-            if (DEBUG) console.log('COMPLETE_REVERSE_TRANLATION', { displayTokens });
+             console.log('COMPLETE_REVERSE_TRANLATION', { displayTokens });
             const { text } = displayTokens.filter(token => token.isBlank)[0];
             let textInputElement = document.querySelectorAll(CHALLENGE_TEXT_INPUT)[0];
             dynamicInput(textInputElement, text);
@@ -243,7 +254,7 @@ function classify() {
  
         case LISTEN_TAP_TYPE: {
             const { correctTokens } = challenge;
-            if (DEBUG) console.log('LISTEN_TAP', { correctTokens });
+             console.log('LISTEN_TAP', { correctTokens });
             const tokens = document.querySelectorAll(CHALLENGE_TAP_TOKEN);
             for (let wordIndex in correctTokens) {
                 tokens.forEach((token) => {
@@ -257,7 +268,7 @@ function classify() {
  
         case LISTEN_TYPE: { // nghe và điền vào ô input
             const { prompt } = challenge;
-            if (DEBUG) console.log('LISTEN', { prompt });
+             console.log('LISTEN', { prompt });
             let textInputElement = document.querySelectorAll(CHALLENGE_TRANSLATE_INPUT)[0];
             dynamicInput(textInputElement, prompt);
             return { prompt };
@@ -265,7 +276,7 @@ function classify() {
  
         case JUDGE_TYPE: { // trắc nghiệm 1 đáp án
             const { correctIndices } = challenge;
-            if (DEBUG) console.log('JUDGE', { correctIndices });
+             console.log('JUDGE', { correctIndices });
             document.querySelectorAll(CHALLENGE_JUDGE_TEXT)[correctIndices[0]].dispatchEvent(clickEvent);
             return { correctIndices };
         }
@@ -273,21 +284,21 @@ function classify() {
         case DIALOGUE_TYPE:
         case CHARACTER_INTRO_TYPE: { // trắc nghiệm 1 đáp án
             const { choices, correctIndex } = challenge;
-            if (DEBUG) console.log('DIALOGUE CHARACTER_INTRO', { choices, correctIndex });
+             console.log('DIALOGUE CHARACTER_INTRO', { choices, correctIndex });
             document.querySelectorAll(CHALLENGE_JUDGE_TEXT)[correctIndex].dispatchEvent(clickEvent);
             return { choices, correctIndex };
         }
  
         case SELECT_TRANSCRIPTION_TYPE: {
             const { choices, correctIndex } = challenge;
-            if (DEBUG) console.log('DIALOGUE CHARACTER_INTRO', { choices, correctIndex });
+             console.log('DIALOGUE CHARACTER_INTRO', { choices, correctIndex });
             document.querySelectorAll(CHALLENGE_JUDGE_TEXT)[correctIndex].dispatchEvent(clickEvent);
             return { choices, correctIndex };
         }
  
         case SPEAK_TYPE: {
             const { prompt } = challenge;
-            if (DEBUG) console.log('SPEAK', { prompt });
+             console.log('SPEAK', { prompt });
             document.querySelectorAll(PLAYER_SKIP)[0].dispatchEvent(clickEvent);
             return { prompt };
         }
@@ -306,13 +317,13 @@ function breakWhenIncorrect() {
 }
  
 function main() {
-	console.log('TESST PHAT');
     try {
         let isPlayerNext = document.querySelectorAll(PLAYER_NEXT)[0].textContent.toUpperCase();
         if (isPlayerNext.valueOf() !== 'CONTINUE') {
             classify();
             //breakWhenIncorrect()
             pressEnter();
+			pressContinueLegend();
         }
         //setTimeout(pressEnter, 150);
     } catch (e) {
